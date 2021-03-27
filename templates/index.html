@@ -1,15 +1,15 @@
 {% extends "layout.html" %}
 
 {% block title %}
-    Index
+    index
 {% endblock %}
 
 {% block main %}
     <head>
         <body>
-    <form action="{{ url_for('busqueda') }}" method="post">
-        <input type="text" name="name" placeholder="search book">
-        <button>Submit</button>
+    <form action="busqueda" method="post">
+        <input type="text" autofocus class="form-control" name="busqueda" placeholder="Books" type="text"/>
+        <button class="btn btn-primary" type="submit">Buscar</button>
     </form>
 </body>
 {% endblock %}

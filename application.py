@@ -1,4 +1,4 @@
-import os
+import os, requests
 from helpers import login_required
 
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -45,12 +45,12 @@ def login():
 
         # Ensure username was submitted
         if not request.form.get("username"):
-            flash("VACIO")
+            flash("Usuario vacio")
             return render_template("login.html")
 
         # Ensure password was submitted
         elif not request.form.get("password"):
-            flash("VACIO")
+            flash("Contraseña vacia")
             return render_template("login.html")    
         
 
@@ -72,51 +72,6 @@ def login():
     else:
         return render_template("login.html")
 
-@app.route("/change_password", methods=["GET", "POST"])
-@login_required
-def change_password():
-    """Allow user to change her password"""
-
-    if request.method == "POST":
-
-        # Ensure current password is not empty
-        if not request.form.get("password"):
-            flash("ALGO SALIO MAL")
-            return render_template("change_password.html")
-        # Query database for user_id
-        rows=db.execute("SELECT * FROM users WHERE id_user = :user", {"user":session["user_id"]}).fetchall()
-        print(rows)
-        # Ensure current password is correct
-        if rows == None or not check_password_hash(rows[2], request.form.get("password")):
-            flash("ALGO SALIO MAL")
-            return render_template("change_password.html")
-
-        # Ensure new password is not empty
-        if not request.form.get("new_password"):
-            flash("ALGO SALIO MAL")
-            return render_template("change_password.html")
-
-        # Ensure new password confirmation is not empty
-        elif not request.form.get("new_password_confirmation"):
-            flash("ALGO SALIO MAL")
-            return render_template("change_password.html")
-
-        # Ensure new password and confirmation match
-        elif request.form.get("new_password") != request.form.get("new_password_confirmation"):
-            flash("ALGO SALIO MAL")
-            return render_template("change_password.html")
-        else:
-            # Update database
-            hashs = generate_password_hash(request.form.get("new_password"))
-            rows = db.execute("UPDATE users SET hashs = :hashs WHERE user_id = :user_id", user_id=session["user_id"], hashs=hashs)
-            db.commit()
-            session.clear()
-
-            # Show flash
-            flash("Changed!")
-            return render_template("login.html")
-
-    return render_template("change_password.html")
 
 @app.route("/logout")
 def logout():
@@ -165,8 +120,62 @@ def register():
         return render_template("register.html")
 
 @app.route("/busqueda", methods=["GET", "POST"])
+@login_required
 def busqueda():
-    
     if request.method == "POST":
 
-        return redirect(url_for("busqueda"))
+        if request.form.get("busqueda"):
+            rows = "%" + request.form.get("busqueda").title() + "%"
+            query = db.execute("SELECT isbn, title, author, year FROM books WHERE title LIKE :rows OR \
+                author LIKE :rows OR isbn Like :rows",{"rows": rows}).fetchall()
+            if query:
+                return render_template("busqueda.html", query = query)
+            else:
+                flash("No se encontro el libro deseado")
+                return render_template("index.html")
+
+        flash("Ingrese el nombre de un libro")
+        return render_template("error2.html")
+
+@app.route("/book/<string:isbn>", methods=["GET", "POST"])
+@login_required
+def book(isbn):
+    if request.method == "POST":
+        usuario = session["id"]
+
+        rating = int(request.form.get("rating"))
+        comment = ( request.form.get("reviews"))
+        
+        row = db.execute("SELECT * FROM reviews WHERE id_user = :user_id AND isbn = :isbn",{"user_id":session["id"], "isbn":isbn})
+
+        print(row)
+
+        if rows.rowcount == 1:
+            flash("usted ya realizo un comentario a este libro")
+            return redirect("/book/"+isbn)
+        query = db.execute("INSERT INTO reviews (isbn,id_user,rating,comment,time) VALUES (:isbn,:user_id,:rating,:comment,now())",{"isbn":isbn, "user_id":usuario, "rating":rating, "comment":comment})
+        db.commit()
+        
+        flash("Su comentario se publico correctamente")
+        return redirect("/book/"+isbn)
+    else:
+        query = db.execute("SELECT isbn, title, author, year FROM books WHERE isbn = :isbn",{"isbn": isbn}).fetchall()
+        print(query)
+        review = db.execute("select users.username,reviews.comment, reviews.rating, to_char(reviews.time, 'DD Mon YYYY - HH24:MI:SS') as fecha from reviews inner join users on reviews.id_user = users.id_user where reviews.isbn = :isbn ORDER BY fecha DESC",{"isbn":isbn}).fetchall()
+        print("Esta es la consulta del rows",review)
+        contenido = requests.get("https://www.googleapis.com/books/v1/volumes?q=isbn:"+isbn).json()
+        contenido = (contenido['items'][0])
+        contenido = contenido['volumeInfo']
+
+        print(contenido)
+        print("")
+        print(contenido['ratingsCount'])
+
+
+        
+        print("")
+        print(contenido['averageRating'])
+
+        imagen= contenido['imageLinks']
+        print(imagen['thumbnail'])
+    return render_template("book.html", query = query, review = review,imagen = imagen, contenido = contenido)

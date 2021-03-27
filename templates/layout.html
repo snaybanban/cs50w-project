@@ -10,6 +10,7 @@
 
         <!-- documentation at http://getbootstrap.com/docs/4.0/, alternative themes at https://bootswatch.com/4-alpha/ -->
         <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css" rel="stylesheet"/>
+        <link rel="icon" href="/static/icon.png">
         
         <link href="/static/style.css" rel="stylesheet"/>
 
@@ -31,13 +32,9 @@
             <div class="collapse navbar-collapse" id="navbar">
                 {% if session.user_id %}
                     <ul class="navbar-nav mr-auto mt-2">
-                        <li class="nav-item"><a class="nav-link" href="/quote">Leer</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/buy">Comentar</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/sell">Valorar</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/history">history</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/#">Ver libros</a></li>
                     </ul>
                     <ul class="navbar-nav ml-auto mt-2">
-                        <li class="nav-item"><a class="nav-link" href="/change_password">Change Password</a></li>
                         <li class="nav-item"><a class="nav-link" href="/logout">Log Out</a></li>
                     </ul>
                 {% else %}
